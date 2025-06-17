@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Détection avec Webcam - Roboflow</title>
+  <script src="https://unpkg.com/@roboflow/inference"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 20px; }
+    canvas, video { border: 1px solid #ccc; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Détection en direct (Webcam)</h1>
+  <video id="video" width="640" height="480" autoplay muted playsinline></video>
+  <canvas id="canvas" width="640" height="480"></canvas>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    // 🔧 Remplace ces valeurs :
+    const apiKey = "rOXQCACju7lxxk1Ng4C1";
+    const model = "appquidechire";  // Nom du projet
+    const version = 4;           // Numéro de version
+
+    async function init() {
+      // Demande la caméra
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+
+      await new Promise((resolve) => {
+        video.onloadedmetadata = () => resolve();
+      });
+
+      // Initialise le modèle Roboflow
+      const rf = new window.roboflow.Inference(apiKey);
+      const loadedModel = await rf.model({ model, version });
+
+      // Boucle de détection
+      async function detect() {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const predictions = await loadedModel.predict(canvas);
+
+        // Affiche les résultats
+        predictions.forEach(p => {
+          const { x, y, width, height, class: name } = p;
+          ctx.strokeStyle = "lime";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x - width / 2, y - height / 2, width, height);
+          ctx.fillStyle = "lime";
+          ctx.fillText(name, x - width / 2, y - height / 2 - 5);
+        });
+
+        requestAnimationFrame(detect);
+      }
+
+      detect();
+    }
+
+    init().catch(err => {
+      alert("Erreur : " + err.message);
+      console.error(err);
+    });
+  </script>
+</body>
+</html>
