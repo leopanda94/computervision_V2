@@ -2,15 +2,15 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Détection avec Webcam - Roboflow</title>
-  <script src="https://unpkg.com/@roboflow/inference"></script>
+  <title>Détection Webcam Roboflow 2</title>
+  <script src="https://unpkg.com/@roboflow/js"></script>
   <style>
     body { font-family: sans-serif; text-align: center; margin-top: 20px; }
-    canvas, video { border: 1px solid #ccc; margin-top: 10px; }
+    video, canvas { border: 1px solid #ccc; margin-top: 10px; }
   </style>
 </head>
 <body>
-  <h1>Détection en direct (Webcam)</h1>
+  <h1>Détection en direct avec Roboflow 2 </h1>
   <video id="video" width="640" height="480" autoplay muted playsinline></video>
   <canvas id="canvas" width="640" height="480"></canvas>
 
@@ -19,31 +19,30 @@
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
 
-    // 🔧 Remplace ces valeurs :
-    const apiKey = "rOXQCACju7lxxk1Ng4C1";
-    const model = "appquidechire";  // Nom du projet
-    const version = 4;           // Numéro de version
+    const API_KEY = "rOXQCACju7lxxk1Ng4C1";  // 👈 Remplace par ta vraie clé
+    const PROJECT = "appquidechire";
+    const VERSION = 4;
 
-    async function init() {
-      // Demande la caméra
+    async function startWebcam() {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       video.srcObject = stream;
-
-      await new Promise((resolve) => {
+      return new Promise(resolve => {
         video.onloadedmetadata = () => resolve();
       });
+    }
 
-      // Initialise le modèle Roboflow
-      const rf = new window.roboflow.Inference(apiKey);
-      const loadedModel = await rf.model({ model, version });
+    async function main() {
+      await startWebcam();
 
-      // Boucle de détection
+      const roboflow = new window.roboflow.API({ apiKey: API_KEY });
+      const model = await roboflow.load({ model: PROJECT, version: VERSION });
+
       async function detect() {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        const predictions = await loadedModel.predict(canvas);
+        const predictions = await model.predict(canvas);
 
-        // Affiche les résultats
+        // Affichage des boîtes de détection
         predictions.forEach(p => {
           const { x, y, width, height, class: name } = p;
           ctx.strokeStyle = "lime";
@@ -59,10 +58,7 @@
       detect();
     }
 
-    init().catch(err => {
-      alert("Erreur : " + err.message);
-      console.error(err);
-    });
+    main().catch(console.error);
   </script>
 </body>
 </html>
